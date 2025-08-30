@@ -2,9 +2,24 @@ const express = require("express");
 const fs = require("fs");
 const cors = require("cors");
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
-app.use(cors());
+const allowedOrigins = [
+  "http://localhost:5173", // Allow local development
+  "https://https://monadashboard.vercel.app/" // Replace with your deployed frontend URL once available
+];
+
+app.use(cors({
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
+  methods: ["GET", "POST", "OPTIONS"], // Allow GET, POST, and OPTIONS for preflight
+  allowedHeaders: ["Content-Type"]
+}));
 app.use(express.json());
 
 const FILE = "leaderboard.json";
@@ -43,4 +58,12 @@ app.get("/api/leaderboard", (req, res) => {
   res.json(data);
 });
 
-app.listen(PORT, () => console.log(`Leaderboard server running at http://localhost:${PORT}`));
+// Handle OPTIONS requests for CORS preflight
+app.options("/api/leaderboard", (req, res) => {
+  res.set("Access-Control-Allow-Origin", req.headers.origin || "*");
+  res.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  res.set("Access-Control-Allow-Headers", "Content-Type");
+  res.sendStatus(200);
+});
+
+app.listen(PORT, () => console.log(`Leaderboard server running at port ${PORT}`));
